@@ -2,7 +2,6 @@ const express = require('express');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
-const axios = require('axios').default;
 
 const public_users = express.Router();
 
@@ -34,71 +33,112 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shopf
-public_users.get('/',function (req, res) {
-    var data = {
-        "books": books
-    }
-    res.send(data);
-});
+public_users.get('/', function(req,res) {
+    let promise = new Promise((resolve, reject)=>{
+        var data = {
+            "books": books
+        }
+        resolve(data);
+    })
 
-// public_users.get('/',function (req, res) {
-//     promise_get.then();
-// });
+    promise.then((data)=>{
+        res.send(data);
+    })  
+})
 
-// let promise_get = new Promise((resolve,reject)=>{
-//     var data = {
-//         "books": books
-//     }
-//     resolve(data);
-// })
 
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  const isbn = req.params.isbn;
-  res.send(books[isbn]);
+public_users.get('/isbn/:isbn', function (req, res) {
+    let promise = new Promise((resolve,reject)=>{
+        const isbn = req.params.isbn;
+        let keys = Object.keys(books);
+        let indicator = 0;
+        for (var i = 0; i < keys.length; i++) {
+            if (keys[i] === isbn) {
+                resolve(isbn);
+                indicator = 1;
+            }
+        }
+        if (indicator === 0) {
+            reject("Book not found");
+        }
+    });
+    promise.then((isbn)=>{
+        res.send(books[isbn]);
+    }).catch((error)=>{
+        res.send(error);
+    });
+
  });
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  const author = req.params.author;
-  let bookKeys = Object.keys(books);
-  var data = {
-      booksbyauthor: []
-    };
-  for (var i = 0; i < bookKeys.length; i++) {
-      let curr = books[bookKeys[i]];
-      if (curr.author === author) {
-          let temp = {
-              isbn: i+1,
-              title: curr.title,
-              reviews: curr.reviews
-          }
-          data.booksbyauthor.push(temp);
-      }
-  }
-  res.send(data);
+public_users.get('/author/:author', function (req, res) {
+    let promise = new Promise((resolve,reject)=>{
+        const author = req.params.author;
+        let bookKeys = Object.keys(books);
+        var data = {
+            booksbyauthor: []
+        };
+        let indicator = 0;
+        for (var i = 0; i < bookKeys.length; i++) {
+            let curr = books[bookKeys[i]];
+            if (curr.author === author) {
+                let temp = {
+                    isbn: i+1,
+                    title: curr.title,
+                    reviews: curr.reviews
+                }
+                data.booksbyauthor.push(temp);
+                indicator++;
+            }
+        }
+        if (indicator) {
+            resolve(data);
+        } else {
+            reject("Author not found");
+        }
+    });
+    promise.then((data)=>{
+        res.send(data);
+    }).catch((error)=>{
+        res.send(error);
+    });
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-    const title = req.params.title;
-    let booksKey = Object.keys(books);
-    var data = {
-        booksbytitle: []
-    }
-    for (var i = 0; i < booksKey.length; i++) {
-        let curr = books[booksKey[i]];
-        if (curr.title === title) {
-            let temp = {
-                isbn: i+1,
-                author: curr.author,
-                reviews: curr.reviews
-            }
-            data.booksbytitle.push(temp);
+public_users.get('/title/:title', function (req, res) {
+    let promise = new Promise((resolve, reject)=>{
+        const title = req.params.title;
+        let booksKey = Object.keys(books);
+        var data = {
+            booksbytitle: []
         }
-    }
-    res.send(data);
+        let indicator = 0;
+
+        for (var i = 0; i < booksKey.length; i++) {
+            let curr = books[booksKey[i]];
+            if (curr.title === title) {
+                let temp = {
+                    isbn: i+1,
+                    author: curr.author,
+                    reviews: curr.reviews
+                }
+                indicator++;
+                data.booksbytitle.push(temp);
+            }
+        }
+        if (indicator) {
+            resolve(data);
+        } else {
+            reject("Title not found");
+        }
+    });
+    promise.then((data)=>{
+        res.send(data);
+    }).catch((error)=>{
+        res.send(error);
+    });
 });
 
 //  Get book review
